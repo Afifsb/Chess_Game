@@ -1,0 +1,54 @@
+.board {
+  display: grid;
+  grid-template-rows: repeat(8, 1fr);
+  grid-template-columns: repeat(8, 1fr);
+  border: 2px solid black;
+  width: 400px;
+  height: 400px;
+  margin: 20px auto;
+}
+
+.square {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  position: relative;
+}
+
+.square.light {
+  background-image: url('/public/Images/square_brown_dark.png');
+}
+
+.square.dark {
+  background-image: url('/public/Images/square_gray_dark.png');
+}
+
+.square.selected {
+  box-shadow: inset 0 0 0 3px yellow;
+}
+
+.piece {
+  width: 80%;
+  height: 80%;
+}
+
+.game {
+  text-align: center;
+}
+
+.restart-button {
+  margin-top: 10px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.possible-move {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: rgba(0, 255, 0, 0.5);
+  position: absolute;
+}
