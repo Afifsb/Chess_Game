@@ -54,9 +54,9 @@ export const isValidMove = (from, to, board, currentPlayer) => {
       break;
     case 'r':
       if ((dx === 0 || dy === 0) && isPathClear(from, to, board)) return true;
-      break;
+      break; 
     case 'n':
-      if ((adx === 2 && ady === 1) || (adx === 1 && ady === 2)) return true;
+      if ((adx === 2 && ady === 1) || (adx === 1 && ady === 2)) return true;  
       break;
     case 'b':
       if (adx === ady && isPathClear(from, to, board)) return true;
