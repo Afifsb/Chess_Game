@@ -1,15 +1,14 @@
 import React from 'react';
 import Piece from './Piece';
-import './ChessGame.css';
 
-const Square = ({ piece, onClick, isSelected, isLight, isPossibleMove }) => {
+const Square = ({ piece, onClick, isPossibleMove, isSelected, mode }) => {
+  let className = "square";
+  if (mode === 'practice' && isPossibleMove) className += " possible-move";
+  if (isSelected) className += " selected";
+
   return (
-    <div 
-      className={`square ${isLight ? 'light' : 'dark'} ${isSelected ? 'selected' : ''}`} 
-      onClick={onClick}
-    >
-      {piece && <Piece piece={piece} />}
-      {isPossibleMove && <div className="possible-move"></div>}
+    <div className={className} onClick={onClick}>
+      <Piece piece={piece} />
     </div>
   );
 };

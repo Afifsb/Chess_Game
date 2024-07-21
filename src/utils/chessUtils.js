@@ -16,7 +16,7 @@ const isPathClear = (from, to, board) => {
   let y = from.row + dy;
 
   while (x !== to.col || y !== to.row) {
-    if (board[y][x] !== '') return false;
+    if (board[y][x]) return false;
     x += dx;
     y += dy;
   }
@@ -25,82 +25,158 @@ const isPathClear = (from, to, board) => {
 
 export const isValidMove = (from, to, board, currentPlayer) => {
   const piece = board[from.row][from.col];
-  const isPieceWhite = piece === piece.toUpperCase();
-  if ((isPieceWhite && currentPlayer !== 'white') || (!isPieceWhite && currentPlayer === 'white')) {
+  const targetPiece = board[to.row][to.col];
+  const isWhitePiece = piece === piece.toUpperCase();
+
+  if ((isWhitePiece && currentPlayer !== 'white') || (!isWhitePiece && currentPlayer !== 'black')) {
+    return false;
+  }
+
+  if (targetPiece && ((isWhitePiece && targetPiece === targetPiece.toUpperCase()) || (!isWhitePiece && targetPiece === targetPiece.toLowerCase()))) {
     return false;
   }
 
   const dx = to.col - from.col;
   const dy = to.row - from.row;
-  const adx = Math.abs(dx);
-  const ady = Math.abs(dy);
-
-  const targetPiece = board[to.row][to.col];
-  const isCapture = targetPiece !== '' && isPieceWhite !== (targetPiece === targetPiece.toUpperCase());
-
-  if (targetPiece !== '' && !isCapture) return false;
 
   switch (piece.toLowerCase()) {
     case 'p':
-      if (isPieceWhite) {
-        if (dy === -1 && dx === 0 && !isCapture) return true;
-        if (dy === -2 && dx === 0 && from.row === 6 && !isCapture && board[from.row - 1][from.col] === '') return true;
-        if (dy === -1 && adx === 1 && isCapture) return true;
+      if (isWhitePiece) {
+        if (dy === -1 && dx === 0 && !targetPiece) return true;
+        if (dy === -2 && dx === 0 && from.row === 6 && !board[from.row - 1][from.col] && !targetPiece) return true;
+        if (dy === -1 && Math.abs(dx) === 1 && targetPiece) return true;
       } else {
-        if (dy === 1 && dx === 0 && !isCapture) return true;
-        if (dy === 2 && dx === 0 && from.row === 1 && !isCapture && board[from.row + 1][from.col] === '') return true;
-        if (dy === 1 && adx === 1 && isCapture) return true;
+        if (dy === 1 && dx === 0 && !targetPiece) return true;
+        if (dy === 2 && dx === 0 && from.row === 1 && !board[from.row + 1][from.col] && !targetPiece) return true;
+        if (dy === 1 && Math.abs(dx) === 1 && targetPiece) return true;
       }
       break;
     case 'r':
       if ((dx === 0 || dy === 0) && isPathClear(from, to, board)) return true;
-      break; 
-    case 'n':
-      if ((adx === 2 && ady === 1) || (adx === 1 && ady === 2)) return true;  
       break;
+    case 'n':
+      const knightMoves = [
+        [-2, -1], [-2, 1], [-1, -2], [-1, 2],
+        [1, -2], [1, 2], [2, -1], [2, 1]
+      ];
+      return knightMoves.some(([moveY, moveX]) => 
+        from.row + moveY === to.row && from.col + moveX === to.col
+      );
     case 'b':
-      if (adx === ady && isPathClear(from, to, board)) return true;
+      if (Math.abs(dx) === Math.abs(dy) && isPathClear(from, to, board)) return true;
       break;
     case 'q':
-      if ((dx === 0 || dy === 0 || adx === ady) && isPathClear(from, to, board)) return true;
+      if ((dx === 0 || dy === 0 || Math.abs(dx) === Math.abs(dy)) && isPathClear(from, to, board)) return true;
       break;
     case 'k':
-      if (adx <= 1 && ady <= 1) return true;
+      if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1) return true;
       break;
     default:
       return false;
   }
+
   return false;
 };
 
-export const getPossibleMoves = (piece, position, board) => {
-  const possibleMoves = [];
-  const isWhite = piece === piece.toUpperCase();
-  const [row, col] = position;
+export const getPossibleMoves = (piece, [row, col], board) => {
+  const moves = [];
+  const isWhitePiece = piece === piece.toUpperCase();
+  const currentPlayer = isWhitePiece ? 'white' : 'black';
 
   for (let i = 0; i < 8; i++) {
     for (let j = 0; j < 8; j++) {
-      if (isValidMove({row, col}, {row: i, col: j}, board, isWhite ? 'white' : 'black')) {
-        possibleMoves.push({row: i, col: j});
+      if (isValidMove({ row, col }, { row: i, col: j }, board, currentPlayer)) {
+        moves.push({ row: i, col: j });
       }
     }
   }
 
-  return possibleMoves;
+  return moves;
 };
 
 export const checkForWinner = (board) => {
-  let whiteKing = false;
-  let blackKing = false;
-
+  const kings = { white: false, black: false };
   for (let row of board) {
     for (let piece of row) {
-      if (piece === 'K') whiteKing = true;
-      if (piece === 'k') blackKing = true;
+      if (piece === 'K') kings.white = true;
+      if (piece === 'k') kings.black = true;
+    }
+  }
+  if (!kings.white) return 'black';
+  if (!kings.black) return 'white';
+  return null;
+};
+
+export const checkForCheckmate = (board, currentPlayer) => {
+  if (!isKingInCheck(board, currentPlayer)) return false;
+
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const piece = board[i][j];
+      if (piece && (currentPlayer === 'white' ? piece === piece.toUpperCase() : piece === piece.toLowerCase())) {
+        const possibleMoves = getPossibleMoves(piece, [i, j], board);
+        for (const move of possibleMoves) {
+          if (!isMovePuttingKingInCheck({row: i, col: j}, move, board, currentPlayer)) {
+            return false;
+          }
+        }
+      }
+    }
+  }
+  return true;
+};
+
+export const checkForStalemate = (board, currentPlayer) => {
+  if (isKingInCheck(board, currentPlayer)) return false;
+
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const piece = board[i][j];
+      if (piece && (currentPlayer === 'white' ? piece === piece.toUpperCase() : piece === piece.toLowerCase())) {
+        const possibleMoves = getPossibleMoves(piece, [i, j], board);
+        for (const move of possibleMoves) {
+          if (!isMovePuttingKingInCheck({row: i, col: j}, move, board, currentPlayer)) {
+            return false;
+          }
+        }
+      }
+    }
+  }
+  return true;
+};
+
+export const isKingInCheck = (board, currentPlayer) => {
+  const kingPiece = currentPlayer === 'white' ? 'K' : 'k';
+  let kingPosition;
+
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      if (board[i][j] === kingPiece) {
+        kingPosition = { row: i, col: j };
+        break;
+      }
+    }
+    if (kingPosition) break;
+  }
+
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const piece = board[i][j];
+      if (piece && (currentPlayer === 'white' ? piece === piece.toLowerCase() : piece === piece.toUpperCase())) {
+        if (isValidMove({ row: i, col: j }, kingPosition, board, currentPlayer === 'white' ? 'black' : 'white')) {
+          return true;
+        }
+      }
     }
   }
 
-  if (!whiteKing) return 'black';
-  if (!blackKing) return 'white';
-  return null;
+  return false;
+};
+
+export const isMovePuttingKingInCheck = (from, to, board, currentPlayer) => {
+  const newBoard = board.map(row => [...row]);
+  newBoard[to.row][to.col] = newBoard[from.row][from.col];
+  newBoard[from.row][from.col] = '';
+
+  return isKingInCheck(newBoard, currentPlayer);
 };
